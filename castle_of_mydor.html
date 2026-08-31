@@ -1,0 +1,778 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Castle of Mydor Remastered v0.3.0</title>
+<style>
+:root{
+  --bg:#0c1019;--panel:#151b28;--panel2:#1c2433;--ink:#e9edf4;--muted:#9aa8bb;
+  --gold:#d8b55b;--line:#344158;--accent:#93c6d8;--danger:#d97a7a;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:radial-gradient(circle at 15% 0,#182239 0,#0b1018 43%,#070a10 100%);color:var(--ink);
+font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;overflow:hidden}
+button,input{font:inherit}
+#app{height:100vh;display:flex;flex-direction:column}
+header{height:68px;display:flex;align-items:center;gap:18px;padding:10px 18px;background:rgba(8,12,19,.92);
+border-bottom:1px solid var(--line);flex:0 0 auto}
+.brand{min-width:260px}.brand h1{margin:0;font:700 21px Georgia,serif;letter-spacing:.03em;color:#f3df9f}
+.brand p{margin:3px 0 0;color:var(--muted);font-size:11px}
+.toolbar{display:flex;gap:7px;flex-wrap:wrap;margin-left:auto}
+.toolbar button,.cmd button,.mode{
+border:1px solid #465775;background:#1b2536;color:#e9edf4;border-radius:7px;padding:8px 11px;cursor:pointer}
+.toolbar button:hover,.cmd button:hover,.mode:hover{background:#27344a}
+main{min-height:0;flex:1;display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:12px;padding:12px}
+.left{min-height:0;display:grid;grid-template-rows:minmax(190px,38%) minmax(0,1fr) auto;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel)}
+.art{position:relative;min-height:0;overflow:hidden;background:#131b25;border-bottom:1px solid var(--line)}
+.art svg{width:100%;height:100%;display:block}.c64scene,.c64prov{display:none}
+.artcopy{position:absolute;left:20px;bottom:17px;max-width:78%;padding:10px 13px;border-left:3px solid var(--gold);
+background:rgba(6,8,12,.66);backdrop-filter:blur(6px)}
+.artcopy h2{margin:0 0 3px;font:700 20px Georgia,serif;color:#fff0b7}
+.artcopy p{margin:0;font-size:12px;color:#d1d8e2}
+.log{overflow:auto;padding:18px 20px;scroll-behavior:smooth}
+.entry{margin:0 0 13px;white-space:pre-wrap;line-height:1.45}
+.entry.command{color:#f0d889}.entry.system{color:#91b8c9}.entry.danger{color:#ef9d9d}
+.cmd{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--line);background:#0d131e}
+.cmd input{min-width:0;flex:1;border:1px solid #4b5a71;background:#080c13;color:#fff;border-radius:7px;padding:10px 12px;outline:none}
+.cmd input:focus{border-color:#9ebed0;box-shadow:0 0 0 2px rgba(147,198,216,.12)}
+.side{min-height:0;display:flex;flex-direction:column;gap:12px}
+.card{border:1px solid var(--line);border-radius:12px;background:rgba(21,27,40,.95);padding:13px}
+.card h3{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#9fb0c5;margin:0 0 10px}
+.compass{display:grid;grid-template-columns:repeat(3,54px);grid-template-rows:repeat(3,43px);justify-content:center;gap:5px}
+.compass button{border:1px solid #465775;background:#202b3d;color:#f5f7fa;border-radius:7px;cursor:pointer}
+.compass button:disabled{opacity:.18;cursor:default}.compass .n{grid-column:2}.compass .w{grid-column:1;grid-row:2}.compass .look{grid-column:2;grid-row:2}.compass .e{grid-column:3;grid-row:2}.compass .s{grid-column:2;grid-row:3}
+.inventory{min-height:120px;max-height:220px;overflow:auto}.item{padding:5px 0;border-bottom:1px solid rgba(72,86,108,.35);font-size:13px}
+.statgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.stat{background:#0e1520;border:1px solid #303d51;border-radius:7px;padding:8px}
+.stat small{display:block;color:#8291a5;font-size:10px;text-transform:uppercase}.stat b{font-size:13px}
+.objective{font-size:12px;line-height:1.45;color:#cbd3de}
+.source{margin-top:auto;color:#78879a;font-size:10px;line-height:1.4}.auth{display:inline-block;margin-top:7px;padding:3px 6px;border:1px solid #3e4c63;border-radius:999px;color:#a9b8ca;font-size:9px;letter-spacing:.08em;text-transform:uppercase}
+.win{color:#f3dd89;font-weight:700}
+
+body.c64{background:#352879;color:#b8b8ff;font-family:"Courier New",monospace;overflow:auto}
+body.c64 header,body.c64 .side{display:none}
+body.c64 #app{height:100vh;background:#352879;padding:10px 0}
+body.c64 main{display:block;padding:0;width:40ch;max-width:calc(100vw - 14px);margin:auto}
+body.c64 .left{display:flex;height:calc(100vh - 20px);border:0;border-radius:0;background:#352879;flex-direction:column}
+body.c64 .art{display:block;flex:0 0 auto;min-height:0;height:auto;overflow:hidden;background:#352879;border:0;padding:0 1ch 1ch}
+body.c64 .art svg,body.c64 .artcopy{display:none}
+body.c64 .c64scene{display:block;margin:0 auto;white-space:pre;overflow:hidden;width:38ch;max-width:38ch;color:#b8b8ff;background:#352879;font:18px/1 "Courier New",monospace;letter-spacing:0}
+body.c64 .c64prov{display:block;text-align:center;color:#b8b8ff;font:10px/1.2 "Courier New",monospace;padding-top:4px;opacity:.72;text-transform:uppercase}
+body.c64 .log{flex:1;background:#352879;color:#b8b8ff;padding:0 1ch;overflow:auto;font-size:18px;line-height:1.12}
+body.c64 .entry{margin:0 0 1em;white-space:pre-wrap;overflow-wrap:anywhere}
+body.c64 .entry.command,body.c64 .entry.system,body.c64 .entry.danger{color:#b8b8ff}
+body.c64 .cmd{border:0;background:#352879;padding:0 1ch 1ch;display:flex}
+body.c64 .cmd input{width:37ch;flex:1;border:0;border-radius:0;background:#352879;color:#b8b8ff;padding:0;font-family:inherit;font-size:18px;text-transform:uppercase}
+body.c64 .cmd button{display:none}
+#exitC64{display:none}
+body.c64 #exitC64{display:block;position:fixed;right:12px;top:10px;z-index:20;background:#352879;border:1px solid #b8b8ff;color:#b8b8ff;padding:5px 7px;font:12px "Courier New",monospace;cursor:pointer}
+
+dialog{border:1px solid #51617b;border-radius:12px;background:#121a27;color:#edf1f6;max-width:690px;width:calc(100% - 30px);padding:0;box-shadow:0 25px 80px #000b}
+dialog::backdrop{background:#0009}
+.modal{padding:20px}.modal h2{margin-top:0;color:#f1d88a;font-family:Georgia,serif}.modal p,.modal li{line-height:1.5;color:#cbd4df}
+.modal .close{float:right;border:1px solid #4a5b75;background:#202b3d;color:white;border-radius:6px;padding:7px 9px;cursor:pointer}
+.testok{color:#98dda5}.testbad{color:#ec9292}
+@media(max-width:820px){body{overflow:auto}#app{height:auto;min-height:100vh}main{grid-template-columns:1fr}.left{height:760px}.side{display:grid;grid-template-columns:1fr 1fr}.source{margin-top:0}}
+@media(max-width:540px){.brand p{display:none}.toolbar button{font-size:11px;padding:7px}.side{display:flex}.left{height:720px}.artcopy{left:12px;bottom:12px;max-width:90%}}
+</style>
+</head>
+<body>
+<button id="exitC64" onclick="setMode('remaster')">EXIT C64</button>
+<div id="app">
+<header>
+  <div class="brand">
+    <h1>Castle of Mydor</h1>
+    <p>Brian J. Betts · Mountain Valley Software · 1984 · Preservation Remaster v0.3.0</p>
+  </div>
+  <div class="toolbar">
+    <button onclick="setMode(document.body.classList.contains('c64')?'remaster':'c64')">C64 / Remaster</button>
+    <button onclick="saveGame()">Save</button>
+    <button onclick="loadGame()">Load</button>
+    <button onclick="undo()">Undo</button>
+    <button onclick="restart()">Restart</button>
+    <button onclick="showHelp()">Help</button>
+    <button onclick="showAbout()">About</button>
+    <button onclick="showArchaeology()">Archaeology</button>
+    <button onclick="showGraphics()">Graphics</button>
+    <button onclick="runTest()">Test</button>
+  </div>
+</header>
+<main>
+<section class="left">
+  <div class="art" id="art"></div>
+  <div class="log" id="log"></div>
+  <form class="cmd" id="form">
+    <input id="input" autocomplete="off" spellcheck="false" placeholder="What now? e.g. LOOK, NORTH, MOVE ROCK">
+    <button>Enter</button>
+  </form>
+</section>
+<aside class="side">
+  <div class="card">
+    <h3>Compass</h3>
+    <div class="compass">
+      <button class="n" data-dir="north">N</button>
+      <button class="w" data-dir="west">W</button>
+      <button class="look" data-dir="look">◎</button>
+      <button class="e" data-dir="east">E</button>
+      <button class="s" data-dir="south">S</button>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Adventure</h3>
+    <div class="statgrid">
+      <div class="stat"><small>Turns</small><b id="turns">0</b></div>
+      <div class="stat"><small>Carrying</small><b id="carrying">0 / 6</b></div>
+      <div class="stat"><small>Lamp wishes</small><b id="wishes">2</b></div>
+      <div class="stat"><small>Status</small><b id="status">Exploring</b></div>
+    </div>
+  </div>
+  <div class="card inventory">
+    <h3>Carrying</h3>
+    <div id="inventory"></div>
+  </div>
+  <div class="card">
+    <h3>Objective</h3>
+    <div class="objective">Find the wizard's cavern beneath the castle, recover the sacred Crown and return it to the throne room.</div>
+  </div>
+  <div class="source">
+    v0.3.0 preservation build. C64 mode now includes reconstructed 40-column character-cell scenes, with recovered-vs-reconstructed provenance kept explicit.
+  </div>
+</aside>
+</main>
+</div>
+
+<dialog id="dlg"><div class="modal" id="modal"></div></dialog>
+
+<script>
+const VERSION="0.3.0";
+const MAX_CARRY=6;
+
+const R={
+ outside:{name:"Outside the Castle of Mydor",desc:"A dark castle rises above you. Its great entrance is sealed by sorcery.",ex:{south:"path"}},
+ path:{name:"A path below the castle",desc:"A rough path winds beneath the castle walls. A small cottage stands to the west.",ex:{north:"outside",west:"cottage"}},
+ cottage:{name:"Inside a small cottage",desc:"A poor cottage. Dry wood lies ready in the cold fireplace.",ex:{east:"path"}},
+ hall:{name:"The castle hall",desc:"A great hall lies beyond the opened entrance. A fireplace yawns in one wall.",ex:{south:"outside"}},
+ fireplace:{name:"Inside the great fireplace",desc:"Cold ash lies thick beneath the chimney stones.",ex:{east:"foyer"}},
+ foyer:{name:"A passage inside the castle",desc:"A stone passage connects the castle interior with an old closed door.",ex:{south:"southhall"}},
+ southhall:{name:"The southern castle road",desc:"The castle gives way to a descending road toward the village.",ex:{north:"foyer",south:"village"}},
+ village:{name:"A small village",desc:"A quiet village lies around a dark stone pool.",ex:{north:"southhall"}},
+ upper:{name:"An upper chamber",desc:"A shadowed chamber beyond the old door. A bat circles above a staircase.",ex:{east:"library",south:"living"}},
+ stairs:{name:"At the head of the stairs",desc:"A heavy chest stands near the stairwell.",ex:{down:"upper"}},
+ library:{name:"The castle library",desc:"Dusty books crowd the shelves. An ornate inkwell rests on an old desk.",ex:{west:"upper",north:"armoury"}},
+ secret:{name:"A secret passage",desc:"A narrow opening leads into darkness.",ex:{north:"foyer",south:"tunnel"}},
+ tunnel:{name:"A dark narrow tunnel",desc:"The tunnel twists beneath the castle. An ogre blocks the way south.",ex:{north:"secret",south:"well"}},
+ well:{name:"Bottom of a dry well",desc:"You are at the bottom of a dry well. The shaft rises high above.",ex:{}},
+ armoury:{name:"The armoury",desc:"Ranks of old weapons and armour line the walls. A cable disappears into the stonework.",ex:{south:"library",north:"throne"}},
+ throne:{name:"The throne room",desc:"A once-grand throne room. Cobwebs cover faded writing and the ancient throne.",ex:{south:"armoury"}},
+ living:{name:"The living room",desc:"A gloomy living room. A worn carpet lies above a hidden mechanism.",ex:{north:"upper"}},
+ dungeon:{name:"The castle dungeons",desc:"Cold stone cells surround a passage. A strange sign and a small box stand nearby.",ex:{up:"living",north:"dpass"}},
+ dpass:{name:"Dungeon passage",desc:"A cramped stone passage climbs toward a black chasm.",ex:{south:"dungeon",north:"bridge"}},
+ bridge:{name:"Bridge over a chasm",desc:"A narrow bridge crosses a black chasm. A troll guards the northern side.",ex:{south:"dpass",north:"northbridge"}},
+ northbridge:{name:"Beyond the chasm",desc:"The passage continues east into the rock beneath Mydor.",ex:{south:"bridge",east:"under1"}},
+ under1:{name:"Passage beneath the castle",desc:"A rough underground passage continues east.",ex:{west:"northbridge",east:"under2"}},
+ under2:{name:"Deep passage",desc:"The air grows colder. The passage continues east.",ex:{west:"under1",east:"under3"}},
+ under3:{name:"Fungal passage",desc:"Pale growths cover the rock. A passage descends south.",ex:{west:"under2",south:"under4"}},
+ under4:{name:"Lower cavern",desc:"The air is damp and close. Another cavern lies to the south.",ex:{north:"under3",south:"fungus"}},
+ fungus:{name:"Toadstool cave",desc:"A pale toadstool grows from the cavern floor. The wizard's lair lies farther south.",ex:{north:"under4",south:"wizard"}},
+ wizard:{name:"The wizard's cavern",desc:"The stolen treasure is here, guarded by the evil wizard of Mydor.",ex:{north:"fungus"}}
+};
+
+const baseItems={
+ matches:{name:"matches",at:null,portable:true},
+ key:{name:"key",at:null,portable:true},
+ coin:{name:"gold coin",at:null,portable:true},
+ pistol:{name:"pistol",at:null,portable:true},
+ knife:{name:"carpet knife",at:null,portable:true},
+ lamp:{name:"magic lamp",at:null,portable:true},
+ hacksaw:{name:"hacksaw",at:null,portable:true},
+ helmet:{name:"helmet",at:null,portable:true,wearable:true},
+ club:{name:"troll club",at:null,portable:true},
+ wand:{name:"magic wand",at:null,portable:true},
+ amulet:{name:"amulet",at:null,portable:true,wearable:true},
+ crown:{name:"sacred Crown",at:null,portable:true}
+};
+
+let S,history=[];
+function fresh(){
+ return {
+  room:"outside",turns:0,items:JSON.parse(JSON.stringify(baseItems)),inv:["matches"],
+  flags:{fireLit:false,ghost:false,rock:false,gate:false,ash:false,lever:false,
+    pool:false,oldDoor:false,batDead:false,chest:false,ink:false,ogreDead:false,
+    ladder:false,cable:false,cobweb:false,throne:false,armour:false,carpet:false,
+    diamond:false,trollDead:false,toad:false,wizardGone:false,boxOpen:false,won:false},
+  worn:[],wishes:2,ended:false
+ };
+}
+function snapshot(){history.push(JSON.stringify(S));if(history.length>80)history.shift()}
+function norm(s){return s.trim().toLowerCase().replace(/[^\w\s]/g," ").replace(/\s+/g," ")}
+function canon(s){
+ const n=norm(s);
+ const dirs={n:"north",s:"south",e:"east",w:"west",u:"up",d:"down"};
+ if(dirs[n])return dirs[n];
+ return n.replace(/^get /,"take ").replace(/^pick up /,"take ").replace(/^examine /,"look ").replace(/^x /,"look ");
+}
+function add(text,cls=""){const p=document.createElement("div");p.className="entry "+cls;p.textContent=text;log.appendChild(p);log.scrollTop=log.scrollHeight}
+function has(id){return S.inv.includes(id)}
+function itemByWords(w){
+ w=norm(w).replace(/^(the|a|an) /,"");
+ return Object.keys(S.items).find(id=>w===id||w===S.items[id].name.toLowerCase()||
+   (id==="coin"&&w==="gold")||(id==="knife"&&w==="carpet knife")||(id==="wand"&&w==="magic wand")||
+   (id==="crown"&&w==="crown")||(id==="lamp"&&w==="magic lamp"));
+}
+function visible(id){return has(id)||S.items[id].at===S.room}
+function place(id,room){S.items[id].at=room;if(has(id))S.inv=S.inv.filter(x=>x!==id)}
+function reveal(id,room){if(S.items[id].at===null&&!has(id))S.items[id].at=room}
+function move(dir){
+ const r=R[S.room];
+ let dest=r.ex[dir];
+ if(S.room==="outside"&&dir==="north"&&!S.flags.gate){return add("The castle entrance is sealed by magic.","system")}
+ if(S.room==="hall"&&dir==="south"){S.room="outside";return describe()}
+ if(S.room==="tunnel"&&dir==="south"&&!S.flags.ogreDead)return add("The ogre blocks your way.","danger");
+ if(S.room==="bridge"&&dir==="north"&&!S.flags.trollDead)return add("The troll bars the bridge.","danger");
+ if(S.room==="dungeon"&&dir==="north"&&!S.flags.diamond)return add("A stone wall blocks the way north.","system");
+ if(S.room==="well"&&dir==="up"&&!S.flags.ladder)return add("The well is too deep to climb.","system");
+ if(!dest)return add("You can't go that way.","system");
+ S.room=dest;describe();
+}
+function go(noun){
+ noun=norm(noun).replace(/^the /,"");
+ if(noun==="fireplace"&&S.room==="hall"){S.room="fireplace";return describe()}
+ if((noun==="door"||noun==="opening")&&(S.room==="foyer"||S.room==="living")&&S.flags.oldDoor){S.room="upper";return describe()}
+ if((noun==="stairs"||noun==="staircase")&&S.room==="upper"&&S.flags.batDead){S.room="stairs";return describe()}
+ if((noun==="opening"||noun==="passage")&&S.room==="library"&&S.flags.ink){S.room="secret";return describe()}
+ 
+ add("You can't go there from here.","system")
+}
+const C64SCENES={
+ outside:[
+"                                      ",
+"              /\        /\            ",
+"             /  \______/  \           ",
+"            /              \          ",
+"       ____/________________\____      ",
+"      | []   []   MYDOR  []   [] |    ",
+"      |      _________         |      ",
+"      |_____|         |________|      ",
+"            |    +    |               ",
+"____________|_________|_______________"
+ ],
+ path:[
+"                                      ",
+"             CASTLE WALL              ",
+"        ######################        ",
+"                                      ",
+"                 /                    ",
+"              __/                     ",
+"           __/                        ",
+"    _____ /          ____             ",
+"   /     \\          /    \\            ",
+"__/_______\\________/______\\___________"
+ ],
+ cottage:[
+"                                      ",
+"          __________________          ",
+"         /                  \\         ",
+"        /       COTTAGE      \\        ",
+"       /______________________\\       ",
+"       |      _________       |       ",
+"       |     |         |      |       ",
+"       |     |  FIRE   |      |       ",
+"       |_____|_________|______|       ",
+"                                      "
+ ],
+ hall:[
+"                                      ",
+"      ||                  ||          ",
+"      ||   CASTLE HALL    ||          ",
+"      ||                  ||          ",
+"  ____||__________________||____      ",
+" |                                |   ",
+" |      [ ]          [ ]          |   ",
+" |                                |   ",
+" |___________      _______________|   ",
+"             |____|                   "
+ ],
+ fireplace:[
+"                                      ",
+"        ______________________        ",
+"       |                      |       ",
+"       |      FIREPLACE       |       ",
+"       |      _________       |       ",
+"       |     /         \\      |       ",
+"       |    /   ASH     \\     |       ",
+"       |   /_____________\\    |       ",
+"       |______________________|       ",
+"                                      "
+ ],
+ living:[
+"                                      ",
+"       ________________________       ",
+"      |                        |      ",
+"      |      LIVING ROOM       |      ",
+"      |                        |      ",
+"      |  ____          ____    |      ",
+"      | |    |        |    |   |      ",
+"      | |____|        |____|   |      ",
+"      |________CARPET__________|      ",
+"                                      "
+ ],
+ village:[
+"                                      ",
+"       _/\\_        _/\\_              ",
+"      /    \\      /    \\             ",
+" ____/______\\____/______\\____         ",
+"|                          |          ",
+"|       SMALL VILLAGE      |          ",
+"|            ____          |          ",
+"|           /    \\         |          ",
+"|          ( POOL )        |          ",
+"|___________\\____/_________|          "
+ ],
+ upper:[
+"                                      ",
+"      __________________________      ",
+"     |                          |     ",
+"     |       UPPER ROOM         |     ",
+"     |             /\\           |     ",
+"     |       <==  /  \\  ==>     |     ",
+"     |            BAT           |     ",
+"     |                      ___ |     ",
+"     |_____________________/___||     ",
+"                                      "
+ ],
+ stairs:[
+"                                      ",
+"       ________________________       ",
+"      |                        |      ",
+"      |      STAIR LANDING     |      ",
+"      |                        |      ",
+"      |    _____________       |      ",
+"      |   |    CHEST    |      |      ",
+"      |   |_____________|      |      ",
+"      |___/__/__/__/__/________|      ",
+"                                      "
+ ],
+ library:[
+"                                      ",
+"  __________________________________  ",
+" | [] [] [] [] [] [] [] [] [] [] [] | ",
+" |                                  | ",
+" |            LIBRARY               | ",
+" |      _________________           | ",
+" |     |                 |          | ",
+" |     |     INKWELL     |          | ",
+" |_____|_________________|__________| ",
+"                                      "
+ ],
+ secret:[
+"                                      ",
+"        ||                    ||      ",
+"        ||  SECRET PASSAGE    ||      ",
+"        ||                    ||      ",
+"        ||                    ||      ",
+"        ||         .          ||      ",
+"        ||        ...         ||      ",
+"        ||       .....        ||      ",
+"        ||____________________||      ",
+"                                      "
+ ],
+ tunnel:[
+"                                      ",
+"          __________________          ",
+"        /                    \\        ",
+"       /     DARK TUNNEL      \\       ",
+"      /                        \\      ",
+"     |                          |     ",
+"     |           OGRE           |     ",
+"     |          /###\\           |     ",
+"      \\_________###____________/      ",
+"                                      "
+ ],
+ well:[
+"                                      ",
+"          ________________            ",
+"        /                  \\          ",
+"       /      DRY WELL      \\         ",
+"      |                      |        ",
+"      |                      |        ",
+"      |          ||          |        ",
+"      |          ||          |        ",
+"      |__________||__________|        ",
+"                                      "
+ ],
+ armoury:[
+"                                      ",
+"  __________________________________  ",
+" |   /|      /|      /|      /|     | ",
+" |  / |     / |     / |     / |     | ",
+" |          ARMOURY                 | ",
+" |    O       O       O       O     | ",
+" |   /|\\     /|\\     /|\\     /|\\    | ",
+" |   / \\     / \\     / \\     / \\    | ",
+" |_______________________________==| ",
+"                                      "
+ ],
+ throne:[
+"                                      ",
+"      __________________________      ",
+"     |                          |     ",
+"     |       THRONE ROOM        |     ",
+"     |           _/\\_           |     ",
+"     |          /____\\          |     ",
+"     |          |    |          |     ",
+"     |        __|____|__        |     ",
+"     |_______/__________\\_______|     ",
+"                                      "
+ ],
+ dungeon:[
+"                                      ",
+"  ||||||||||||||||||||||||||||||||    ",
+"  ||                              ||   ",
+"  ||          DUNGEONS            ||   ",
+"  ||   | |     | |     | |       ||   ",
+"  ||   | |     | |     | |       ||   ",
+"  ||   |_|     |_|     |_|       ||   ",
+"  ||         [  BOX  ]            ||   ",
+"  ||______________________________||   ",
+"                                      "
+ ],
+ bridge:[
+"                                      ",
+"                                      ",
+"          BLACK CHASM                 ",
+"                                      ",
+" ========------------------========   ",
+"              TROLL                   ",
+"               O                      ",
+"              /|\\                     ",
+"              / \\                     ",
+"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+ ],
+ under1:[
+"                                      ",
+"        ______________________        ",
+"      /                        \\      ",
+"     /    UNDERGROUND PASSAGE   \\     ",
+"    |                            |    ",
+"    |             ....           |    ",
+"    |          ....              |    ",
+"     \\__________________________/     ",
+"                                      ",
+"                                      "
+ ],
+ under2:[
+"                                      ",
+"      __________________________      ",
+"    /                            \\    ",
+"   /       DEEP PASSAGE           \\   ",
+"  |                                |  ",
+"  |             ....               |  ",
+"  |          ....                  |  ",
+"   \\______________________________/   ",
+"                                      ",
+"                                      "
+ ],
+ under3:[
+"                                      ",
+"        ______________________        ",
+"      /                        \\      ",
+"     /      FUNGAL CAVERN       \\     ",
+"    |       _      _      _      |    ",
+"    |      (_)    (_)    (_)     |    ",
+"    |      /|\\    /|\\    /|\\     |    ",
+"     \\__________________________/     ",
+"                                      ",
+"                                      "
+ ],
+ fungus:[
+"                                      ",
+"       ________________________       ",
+"     /                          \\     ",
+"    /       TOADSTOOL CAVE       \\    ",
+"   |                              |   ",
+"   |              ___             |   ",
+"   |             (___)            |   ",
+"   |              / \\             |   ",
+"    \\____________________________/    ",
+"                                      "
+ ],
+ wizard:[
+"                                      ",
+"       ________________________       ",
+"     /                          \\     ",
+"    /          CAVERN            \\    ",
+"   |                              |   ",
+"   |           * WIZARD *         |   ",
+"   |              /\\              |   ",
+"   |             /__\\     [BOX]   |   ",
+"    \\____________________________/    ",
+"                                      "
+ ]
+};
+function c64Scene(){
+ const lines=C64SCENES[S.room]||C64SCENES.outside;
+ const safe=lines.map(x=>x.slice(0,38).padEnd(38," ")).join("\\n");
+ return `<pre class="c64scene">${escapeHTML(safe)}</pre><div class="c64prov">40-column charset reconstruction · v${VERSION}</div>`;
+}
+
+function sceneSVG(){
+ const groups={
+  outside:["#101827","#243853","#7f89a0"],path:["#18201b","#3d4936","#77806a"],cottage:["#2b1a15","#553222","#b37a46"],
+  hall:["#171722","#343245","#817a75"],fireplace:["#191416","#50342b","#8f6e5c"],living:["#1f1720","#493044","#826e70"],
+  lane:["#131b20","#31454d","#82949a"],village:["#182128","#344d58","#88a3a7"],upper:["#19151d","#3c2d42","#84718b"],
+  stairs:["#18171c","#383542","#827d83"],library:["#171b18","#3b4336","#8f8460"],secret:["#101317","#273035","#7b8581"],
+  tunnel:["#0c0d11","#2c2830","#736c79"],well:["#0d1112","#27383a","#668284"],armoury:["#161a1e","#3b464c","#9a9b8e"],
+  throne:["#1c1517","#4d3030","#b08a57"],dungeon:["#101315","#2e3537","#758080"],bridge:["#090c10","#232c36","#8b8f90"],
+  under1:["#0d1110","#27332b","#647563"],under2:["#0a0f10","#263233","#5c7473"],under3:["#0f1310","#304034","#758768"],
+  fungus:["#11130d","#3d4029","#9c9962"],wizard:["#130c18","#402550","#a96e9e"]
+ };
+ const p=groups[S.room]||groups.outside;
+ const icon={outside:"♜",path:"⌁",cottage:"⌂",hall:"♜",fireplace:"♨",living:"◇",lane:"⌁",village:"⌂",
+ upper:"☾",stairs:"⌁",library:"▤",secret:"◈",tunnel:"●",well:"○",armoury:"⚔",throne:"♛",dungeon:"▥",bridge:"═",
+ under1:"◌",under2:"◌",under3:"◌",fungus:"♠",wizard:"✦"}[S.room];
+ return `<svg viewBox="0 0 1000 430" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+ <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="${p[0]}"/><stop offset=".62" stop-color="${p[1]}"/><stop offset="1" stop-color="${p[0]}"/></linearGradient>
+ <radialGradient id="r"><stop stop-color="${p[2]}" stop-opacity=".45"/><stop offset="1" stop-color="${p[1]}" stop-opacity="0"/></radialGradient></defs>
+ <rect width="1000" height="430" fill="url(#g)"/><circle cx="760" cy="80" r="260" fill="url(#r)"/>
+ <path d="M0 350 Q170 270 330 335 T650 325 T1000 330 V430 H0Z" fill="#05070a" opacity=".58"/>
+ <path d="M70 365 Q210 180 350 365 M290 365 Q455 120 625 365 M590 365 Q740 170 920 365" fill="none" stroke="${p[2]}" stroke-opacity=".15" stroke-width="14"/>
+ <text x="760" y="280" text-anchor="middle" font-size="185" font-family="Georgia,serif" fill="${p[2]}" opacity=".26">${icon}</text>
+ <rect x="0" y="0" width="1000" height="430" fill="none" stroke="${p[2]}" stroke-opacity=".15" stroke-width="10"/>
+ </svg>`;
+}
+function c64Exits(){
+ const r=R[S.room], names=[];
+ for(const d of ["north","south","east","west","up","down"]){
+   let ok=!!r.ex[d];
+   if(S.room==="outside"&&d==="north")ok=S.flags.gate;
+   if(S.room==="well"&&d==="up")ok=S.flags.ladder;
+   if(ok) names.push(d.toUpperCase());
+ }
+ return names.length ? "EXITS: "+names.map(x=>x+".").join(" ") : "";
+}
+function describe(){
+ const r=R[S.room];
+ if(document.body.classList.contains("c64")){
+   // Room prose remains reconstruction in v0.2; the EXITS punctuation/style below
+   // is recovered from the supplied C64 payload.
+   add(r.name.toUpperCase()+"\n"+r.desc.toUpperCase()+(c64Exits()?"\n\n"+c64Exits():""));
+ } else {
+   add(r.name.toUpperCase()+"\n"+r.desc);
+ }
+ const here=Object.keys(S.items).filter(id=>S.items[id].at===S.room);
+ if(here.length)add((document.body.classList.contains("c64")?"YOU CAN SEE: ":"You can see: ")+here.map(id=>S.items[id].name).join(", ")+(document.body.classList.contains("c64")?"":"."));
+ render();
+}
+function inventory(){
+ if(!S.inv.length)return add("You are carrying nothing.");
+ add("You are carrying:\n"+S.inv.map(id=>"  "+S.items[id].name+(S.worn.includes(id)?" (worn)":"")).join("\n"));
+}
+function take(words){
+ const id=itemByWords(words);if(!id||!visible(id)||has(id))return add("You can't take that.","system");
+ if(S.inv.length>=MAX_CARRY)return add("You are carrying too much.","system");
+ S.items[id].at=null;S.inv.push(id);add("Taken.");
+}
+function drop(words){
+ const id=itemByWords(words);if(!id||!has(id))return add("You aren't carrying that.","system");
+ place(id,S.room);S.worn=S.worn.filter(x=>x!==id);add("Dropped.");
+}
+function wear(words){
+ const id=itemByWords(words);if(!id||!has(id)||!S.items[id].wearable)return add("You can't wear that.","system");
+ if(!S.worn.includes(id))S.worn.push(id);add("You are now wearing the "+S.items[id].name+".");
+}
+function lookAt(w){
+ w=norm(w).replace(/^the /,"");
+ if(!w)return describe();
+ if(S.room==="cottage"&&w==="fireplace")return add("Dry wood has been laid in the fireplace.");
+ if(S.room==="village"&&w==="pool"){
+   if(S.flags.pool){reveal("pistol","village");return add("There is a pistol in the pool.");}
+   return add("The dark water reflects the castle.");
+ }
+ if(S.room==="dungeon"&&w==="box"){if(S.flags.diamond)reveal("wand","dungeon");return add(S.flags.diamond?"The box contains a magic wand.":"A small closed-looking box.")}
+ if(S.room==="dungeon"&&w==="sign")return add(S.flags.diamond?"The sign bears a diamond-shaped mark.":"The sign seems to suggest that magic may work backwards.");
+ if(S.room==="wizard"&&w==="box"){
+   if(S.flags.boxOpen){reveal("crown","wizard");return add("Inside the box is the sacred Crown of Mydor!")}
+   return add("A locked treasure box rests in the cavern.");
+ }
+ if(w==="writing"&&S.room==="throne")return add("The faded writing hints that protection is needed before facing the troll.");
+ const id=itemByWords(w);if(id&&visible(id))return add("It is "+S.items[id].name+".");
+ add("You notice nothing special.");
+}
+function special(c){
+ const [v,...rest]=c.split(" ");const n=rest.join(" ");
+ if(c==="light wood"&&S.room==="cottage"&&has("matches")){
+   S.flags.fireLit=true;S.flags.ghost=true;add("The wood catches. A ghost appears in the smoke and whispers a magic word: SORCERY.");return true;
+ }
+ if(c==="move rock"&&S.room==="outside"){S.flags.rock=true;reveal("key","outside");add("Beneath the rock is a key.");return true}
+ if(c==="say sorcery"&&S.room==="outside"){S.flags.gate=true;R.outside.ex.north="hall";add("The spell breaks. The great castle entrance opens.");return true}
+ if(c==="move ash"&&S.room==="fireplace"){S.flags.ash=true;reveal("coin","fireplace");add("You find a gold coin in the ashes.");return true}
+ if(c==="push lever"&&S.room==="fireplace"){S.flags.lever=true;add("Somewhere nearby, a trapdoor mechanism clunks open.");return true}
+ if((c==="drop coin"||c==="drop gold coin")&&S.room==="village"&&has("coin")){
+   place("coin","village");S.flags.pool=true;add("A villager snatches up the coin and drops something into the pool.");return true;
+ }
+ if(c==="open door"&&S.room==="foyer"){S.flags.oldDoor=true;add("The old door opens.");return true}
+ if((c==="shoot bat"||c==="kill bat")&&S.room==="upper"&&has("pistol")){S.flags.batDead=true;add("The shot echoes. The bat falls away from the staircase.");return true}
+ if(c==="move chest"&&S.room==="stairs"){S.flags.chest=true;reveal("knife","stairs");add("Behind the chest you find a carpet knife.");return true}
+ if(c==="turn inkwell"&&S.room==="library"){S.flags.ink=true;add("The inkwell turns. A secret opening appears in the wall.");return true}
+ if((c==="shoot ogre"||c==="kill ogre")&&S.room==="tunnel"&&has("pistol")){S.flags.ogreDead=true;reveal("lamp","tunnel");add("The ogre collapses. A magic lamp lies where it stood.");return true}
+ if(c==="rub lamp"&&has("lamp")){
+   if(S.wishes<=0){add("Nothing happens.");return true}
+   S.wishes--;
+   if(S.room==="well"&&!S.flags.ladder){S.flags.ladder=true;R.well.ex.up="tunnel";reveal("hacksaw","well");add("A genie appears. A ladder forms in the well, and a hacksaw is left behind.");return true}
+   if(S.room==="armoury"){add("The genie helps you past the troublesome armour and vanishes.");return true}
+   add("A genie appears, looks puzzled by your timing, and disappears.");return true
+ }
+ if(c==="cut cable"&&S.room==="armoury"&&has("hacksaw")){S.flags.cable=true;add("The hacksaw cuts through the cable. A mechanism releases.");return true}
+ if(c==="move cobwebs"&&S.room==="throne"){S.flags.cobweb=true;add("You brush away the cobwebs, revealing faded writing.");return true}
+ if(c==="read writing"&&S.room==="throne"&&S.flags.cobweb){add("The writing warns that only a protected head may survive the troll.");return true}
+ if(c==="move throne"&&S.room==="throne"){S.flags.throne=true;reveal("helmet","throne");add("A helmet is hidden beneath the throne.");return true}
+ if(c==="move armour"&&S.room==="armoury"){S.flags.armour=true;reveal("club","armoury");add("Behind the armour is a heavy troll club.");return true}
+ if(c==="cut carpet"&&S.room==="living"&&has("knife")&&S.flags.lever){S.flags.carpet=true;R.living.ex.down="dungeon";add("The carpet parts, revealing the opened trapdoor.");return true}
+ if(c==="read sign"&&S.room==="dungeon"){add("The sign hints: perhaps the magic word should be reversed.");return true}
+ if(c==="say yrecros"&&S.room==="dungeon"){S.flags.diamond=true;reveal("wand","dungeon");add("The reversed spell works. The box yields a magic wand.");return true}
+ if(c==="press diamond"&&S.room==="dungeon"&&S.flags.diamond){S.flags.diamond=true;add("A stone wall slides aside, revealing the way north.");return true}
+ if(c==="kill troll"&&S.room==="bridge"){
+   add("With what?");S.flags.awaitClub=true;return true
+ }
+ if(c==="club"&&S.room==="bridge"&&S.flags.awaitClub){
+   S.flags.awaitClub=false;
+   if(!has("club")){add("You have no club!","danger");return true}
+   if(!S.worn.includes("helmet")){S.ended=true;add("The troll strikes first. Without protection, your adventure ends here.","danger");return true}
+   S.flags.trollDead=true;add("Protected by the helmet, you defeat the troll with the club.");return true
+ }
+ if(c==="move toadstool"&&S.room==="fungus"){S.flags.toad=true;reveal("amulet","fungus");add("Under the toadstool lies an amulet.");return true}
+ if(c==="wave wand"&&S.room==="wizard"&&has("wand")){
+   if(!S.worn.includes("amulet")){add("The wizard laughs. His spell overwhelms you.","danger");S.ended=true;return true}
+   S.flags.wizardGone=true;add("The wand flashes. Protected by the amulet, you banish the wizard!");return true
+ }
+ if(c==="open box"&&S.room==="wizard"&&S.flags.wizardGone){S.flags.boxOpen=true;add("The wizard's treasure box opens.");return true}
+ return false;
+}
+function execute(raw,quiet=false){
+ if(!raw.trim())return;
+ if(S.ended&&!S.flags.won){add("The adventure is over. RESTART or UNDO to continue.","system");return}
+ const c=canon(raw);
+ snapshot();S.turns++;
+ if(!quiet)add("> "+raw.toUpperCase(),"command");
+ if(special(c)){render();checkWin();return}
+ if(["north","south","east","west","up","down"].includes(c))move(c);
+ else if(c==="look")describe();
+ else if(c==="inventory"||c==="i")inventory();
+ else if(c.startsWith("look "))lookAt(c.slice(5));
+ else if(c.startsWith("take "))take(c.slice(5));
+ else if(c.startsWith("drop "))drop(c.slice(5));
+ else if(c.startsWith("wear "))wear(c.slice(5));
+ else if(c.startsWith("go "))go(c.slice(3));
+ else if(c.startsWith("read "))lookAt(c.slice(5));
+ else add("I don't understand that.","system");
+ render();checkWin();
+}
+function checkWin(){
+ if(has("crown")&&S.room==="throne"&&!S.flags.won){
+   S.flags.won=true;S.ended=true;
+   add("*** CONGRATULATIONS ***\nYou have defeated the wizard and restored the sacred Crown to the throne room.\nThe kingdom of Mydor is saved!","system");
+   render();
+ }
+}
+function render(){
+ turns.textContent=S.turns;carrying.textContent=S.inv.length+" / "+MAX_CARRY;wishes.textContent=S.wishes;
+ status.textContent=S.flags.won?"Kingdom saved":S.ended?"Game over":"Exploring";
+ inventoryEl.innerHTML=S.inv.length?S.inv.map(id=>`<div class="item">${escapeHTML(S.items[id].name)}${S.worn.includes(id)?" · worn":""}</div>`).join(""):`<div class="item" style="color:#7f8d9f">Nothing</div>`;
+ const r=R[S.room];art.innerHTML=c64Scene()+sceneSVG()+`<div class="artcopy"><h2>${escapeHTML(r.name)}</h2><p>${escapeHTML(r.desc)}</p></div>`;
+ document.querySelectorAll("[data-dir]").forEach(b=>{
+   const d=b.dataset.dir;if(d==="look"){b.disabled=false;return}
+   let ok=!!R[S.room].ex[d];
+   if(S.room==="outside"&&d==="north")ok=S.flags.gate;
+   if(S.room==="well"&&d==="up")ok=S.flags.ladder;
+   if(S.room==="dungeon"&&d==="north")ok=S.flags.diamond;
+   b.disabled=!ok;
+ });
+}
+function escapeHTML(s){return s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function setMode(m){document.body.classList.toggle("c64",m==="c64");input.focus();localStorage.setItem("mydor-mode",m);render()}
+function saveGame(){localStorage.setItem("mydor-save",JSON.stringify(S));add("Game saved.","system")}
+function loadGame(){const x=localStorage.getItem("mydor-save");if(!x)return add("No saved game was found.","system");S=JSON.parse(x);history=[];add("Game restored.","system");describe()}
+function undo(){if(!history.length)return add("Nothing to undo.","system");S=JSON.parse(history.pop());add("Undone.","system");render();describe()}
+function restart(){S=fresh();history=[];log.innerHTML="";boot()}
+function showHelp(){
+ modal.innerHTML=`<button class="close" onclick="dlg.close()">Close</button><h2>How to play</h2>
+ <p>Castle of Mydor uses the classic two-word adventure style. Directions may be typed in full or as N, S, E, W, U and D.</p>
+ <p>Useful commands include <b>LOOK</b>, <b>LOOK FIREPLACE</b>, <b>GET/TAKE</b>, <b>DROP</b>, <b>WEAR</b>, <b>MOVE</b>, <b>OPEN</b>, <b>READ</b>, <b>GO</b>, <b>SAY</b>, <b>SHOOT</b>, <b>CUT</b>, <b>RUB</b>, <b>WAVE</b> and <b>INVENTORY</b>.</p>
+ <p>The remaster compass enables only known exits. C64 mode intentionally keeps the presentation sparse.</p>`;dlg.showModal()
+}
+function showAbout(){
+ modal.innerHTML=`<button class="close" onclick="dlg.close()">Close</button><h2>Castle of Mydor Remastered v${VERSION}</h2>
+ <p><b>Original:</b> Brian J. Betts / Mountain Valley Software, 1984.</p>
+ <p>This preservation remake is reconstructed from the surviving C64 disk payload supplied for the project, plus archival cross-checks of the game's identity, objective, map/solution lineage and parser style.</p>
+ <p><b>v0.1.0:</b> established the complete playable winning chain and regression playthrough.</p>
+ <p><b>v0.2.0:</b> began binary archaeology and incorporated confirmed embedded strings and exit-list formatting.</p><p><b>v0.3.0:</b> adds room-specific 40-column character-cell scenes to C64 mode. These are deliberately labelled reconstructions: they reproduce the original medium and constraints without pretending to be exact screenshots where the source image cannot yet be verified.</p>
+ <p>Connective room prose and remastered scene art are still reconstruction material where the binary has not yet yielded a trustworthy verbatim string.</p>`;dlg.showModal()
+}
+function showArchaeology(){
+ modal.innerHTML=`<button class="close" onclick="dlg.close()">Close</button><h2>1984 Binary Archaeology</h2>
+ <p>This notebook records only strings we can substantiate from the supplied Castle of Mydor payload. It deliberately separates recovered evidence from remake inference.</p>
+ <ul>
+   <li><b>CASTLE OF MYDOR</b> — embedded title string recovered directly from the image.</li>
+   <li><b>CAVERN</b> — embedded location label recovered directly from the game data.</li>
+   <li><b>EXITS: NORTH. SOUTH. WEST.</b> — recovered output fragment showing the original terse exit-list style and punctuation.</li>
+   <li><b>REVEAL 1</b> — embedded control/adventure string present in the payload.</li>
+   <li><b>CLUB IN EACH HAND.</b> — readable embedded text associated with the club/troll portion of the game data.</li>
+ </ul>
+ <p><b>What we have not claimed yet:</b> most room descriptions in this remaster are still connective reconstructions. They will only be marked as original when recovered cleanly enough from the binary or independently verified against an authentic execution.</p>
+ <p>The payload also contains large non-text regions consistent with C64 program/character data. v0.3 now uses a real 40-column character-cell presentation model; exact recovered glyph layouts can replace the current reconstructed scenes incrementally.</p>`;dlg.showModal()
+}
+const WALK=[
+"s","w","look fireplace","light wood","drop matches","e","n","move rock","get key","say sorcery","n",
+"go fireplace","move ash","get coin","push lever","e","s","s","drop coin","look pool","get pistol","n","n",
+"open door","go door","shoot bat","go stairs","move chest","get knife","d","e","turn inkwell","go opening",
+"s","shoot ogre","drop pistol","get lamp","s","rub lamp","get hacksaw","u","n","n","go door","e","n",
+"cut cable","n","move cobwebs","read writing","drop hacksaw","move throne","get helmet","wear helmet","s",
+"move armour","get club","s","w","s","cut carpet","drop knife","d","read sign","say yrecros","look box","get wand",
+"look sign","press diamond","n","n","kill troll","club","n","e","e","e","s","s","move toadstool","get amulet",
+"wear amulet","s","wave wand","drop wand","open box","look box","get crown","n","n","n","w","w","w","s",
+"kill troll","club","s","s","u","go door","e","n","rub lamp","n"
+];
+
+function showGraphics(){
+ modal.innerHTML=`<button class="close" onclick="dlg.close()">Close</button><h2>C64 Graphics Lab</h2>
+ <p>The original Castle of Mydor is documented as a <b>Graphic(Charset)/Text</b> C64 adventure. v${VERSION} therefore renders its classic mode as a fixed 40-column character-cell display rather than scaling modern vector artwork down and calling it PETSCII.</p>
+ <p><b>Recovered:</b> the supplied payload contains the game title, location/UI strings and substantial non-text C64 data.</p>
+ <p><b>Reconstructed:</b> the individual room pictures in this version. They use character-cell geometry, terse composition and C64 display constraints, but are not claimed to be byte-perfect copies of the 1984 scenes.</p>
+ <p>The wizard location intentionally uses the recovered <b>CAVERN</b> label. Every C64 scene carries a small provenance line so future exact recoveries can replace reconstructions one room at a time.</p>`;
+ dlg.showModal();
+}
+
+function runTest(){
+ const old=S,oldHist=history,oldLog=log.innerHTML;
+ S=fresh();history=[];log.innerHTML="";
+ let error=null;
+ try{for(const c of WALK){execute(c,true);if(S.ended&&!S.flags.won)throw new Error("Game ended at "+c)}}
+ catch(e){error=e}
+ const reached=S.room,got=has("crown"),won=S.flags.won;
+ const result=!error&&got&&reached==="throne"&&won;
+ S=old;history=oldHist;log.innerHTML=oldLog;render();
+ modal.innerHTML=`<button class="close" onclick="dlg.close()">Close</button><h2>Automated playthrough</h2>
+ <p class="${result?"testok":"testbad"}"><b>${result?"PASS":"FAIL"}</b></p>
+ <p>${result?"The preservation walkthrough recovered the Crown and returned it to the throne room successfully.":"The walkthrough did not reach the expected winning state."}</p>
+ <p>Commands exercised: ${WALK.length}. Final test room: ${escapeHTML(reached)}. Crown: ${got?"yes":"no"}. Win flag: ${won?"yes":"no"}.</p>
+ ${error?`<p class="testbad">${escapeHTML(error.message)}</p>`:""}`;dlg.showModal()
+}
+function boot(){
+ if(document.body.classList.contains("c64")){
+   add("CASTLE OF MYDOR\nAN EVIL WIZARD HAS STOLEN THE SACRED CROWN.\nFIND HIS CAVERN BENEATH THE CASTLE.","system");
+ } else {
+   add("CASTLE OF MYDOR\n\nAn evil wizard has stolen the sacred Crown of Mydor.\nFind his cavern beneath the castle, defeat him, recover the Crown and restore it to the throne room.","system");
+ }
+ describe();
+}
+const log=document.getElementById("log"),input=document.getElementById("input"),form=document.getElementById("form");
+const turns=document.getElementById("turns"),carrying=document.getElementById("carrying"),wishes=document.getElementById("wishes"),status=document.getElementById("status");
+const inventoryEl=document.getElementById("inventory"),art=document.getElementById("art"),dlg=document.getElementById("dlg"),modal=document.getElementById("modal");
+form.addEventListener("submit",e=>{e.preventDefault();const v=input.value;input.value="";execute(v);input.focus()});
+document.querySelectorAll("[data-dir]").forEach(b=>b.onclick=()=>execute(b.dataset.dir));
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&dlg.open)dlg.close()});
+S=fresh();setMode(localStorage.getItem("mydor-mode")||"remaster");boot();input.focus();
+</script>
+</body>
+</html>
